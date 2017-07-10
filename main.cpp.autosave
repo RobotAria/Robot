@@ -74,7 +74,7 @@ void* recv_msg(void* _num) {
                                     rg[i] = false;
                                 else
                                 {
-                                    cout << "shit erroe,reveive "<<inst <<endl;
+                                    cout << "shit error,reveive "<<inst <<endl;
                                 }
                             }
                         }
@@ -157,8 +157,7 @@ int main(int argc,char **argv)
     while(1){
         double rotate_temp = 89 + (rand()%20)*1.0/10;
         if(flag == 1){
-            if(rgflag)
-                continue;
+
             flag = 0;
             cout << flush;
             if(inst == "forward"){
