@@ -74,13 +74,13 @@ void* recv_msg(void* _num) {
                                     rg[i] = false;
                                 else
                                 {
-                                    cout << "shit erroe,reveive "<<inst <<endl;
+                                    cout << "shit error,reveive "<<inst <<endl;
                                 }
                             }
                         }
 
                 }
-           }
+}
 }
 
 void* accept_link(void*) {
@@ -92,9 +92,7 @@ void* accept_link(void*) {
         }
         printf("Received a connection from %s\n",(char*) inet_ntoa(remote_addr.sin_addr));
         pthread_create(&tid[thread_count], NULL, &recv_msg, (void*)thread_count);
-        cout << "1" <<endl;
         pthread_detach(tid[thread_count]);
-        cout << "2" <<endl;
         ++thread_count;
     }
 
@@ -154,18 +152,22 @@ int main(int argc,char **argv)
     robot.comInt(ArCommands::ENABLE,1);
     robot.unlock();
 
-    while(1){
-        double rotate_temp = 89 + (rand()%20)*1.0/10;
+    while(1)
+    {
         if(flag == 1){
-            if(rgflag)
-                continue;
+            double rotate_temp = 89 + (rand()%20)*1.0/10;
             flag = 0;
-            cout << flush;
+            cout <<"rotate_tmp = "<<rotate_temp << flush;
             if(inst == "forward"){
                 if(rg[1])
                     continue;
+                if(rgflag)
+                {
+                    rgflag = false;
+                    memset(rg,0,sizeof(rg));
+                }
                 cout << "receive forward" << endl;
-                robot.setVel(1);
+                robot.setVel(60);
             }
             else if(inst == "stop"){
                 cout << "receive stop" << endl;
@@ -174,6 +176,11 @@ int main(int argc,char **argv)
             else if(inst == "left"){
                 if(rg[0])
                     continue;
+                if(rgflag)
+                {
+                    rgflag = false;
+                    memset(rg,0,sizeof(rg));
+                }
                 cout << "receive left" << endl;
                 robot.setDeltaHeading(rotate_temp);
                 int tmpcount = 0;
@@ -188,6 +195,11 @@ int main(int argc,char **argv)
             else if(inst == "right"){
                 if(rg[2])
                     continue;
+                if(rgflag)
+                {
+                    rgflag = false;
+                    memset(rg,0,sizeof(rg));
+                }
                 cout << "receive right" << endl;
                 robot.setDeltaHeading(-rotate_temp);
                 int tmpcount = 0;
@@ -201,6 +213,11 @@ int main(int argc,char **argv)
             else if(inst == "exit"){
                 cout << "receive exit" << endl;
                 break;
+            }
+            else if(inst == "reset"){
+                memset(rg,0,sizeof(rg));
+                rgflag = false;
+                cout << "receive reset" << endl;
             }
             else{
                 cout << "error, receive " << inst << endl;
