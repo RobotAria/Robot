@@ -197,6 +197,11 @@ int cmp(type x, type y)
     return x.x < y.x;
 }
 
+double sqr(double x)
+{
+    return x*x;
+}
+
 int main()
 {
     std::cout << "Hello World!" << std::endl;
@@ -284,7 +289,7 @@ int main()
     // check here (https://github.com/OpenKinect/libfreenect2/issues/337) and here (https://github.com/OpenKinect/libfreenect2/issues/464) why depth2rgb image should be bigger
 
     unsigned short port = 8888;             // 服务器的端口号
-    char *server_ip = "10.129.150.45";       // 服务器ip地址
+    char *server_ip = "10.129.244.49";       // 服务器ip地址
 
     int sockfd;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);// 创建通信端点：套接字
@@ -309,10 +314,17 @@ int main()
     }
 
     char send_buf[512] = {0};
+    char recv_buf[512] = {0};
+    strcpy(send_buf, "00turnggg");
+    send(sockfd, send_buf, strlen(send_buf), 0);   // 向服务器发送信息
 
     cv::namedWindow("rgb", WND_PROP_ASPECT_RATIO);
     cv::namedWindow("gray", WND_PROP_ASPECT_RATIO);
     cv::namedWindow("hsv", WND_PROP_ASPECT_RATIO);
+
+    int k = 25;	//调整参数以得到圆
+    int minR = 20;
+    int minDis = 2;
 
     while(!protonect_shutdown)
     {
@@ -324,7 +336,7 @@ int main()
         registration->apply(rgb, depth, &undistorted, &registered, true, &depth2rgb);
 
         cv::Mat(rgb->height, rgb->width, CV_8UC4, rgb->data).copyTo(rgbmat);
-        cv::Mat(ir->height, ir->width, CV_32FC1, ir->data).copyTo(irmat);
+        //cv::Mat(ir->height, ir->width, CV_32FC1, ir->data).copyTo(irmat);
         cv::Mat(depth2rgb.height, depth2rgb.width, CV_32FC1, depth2rgb.data).copyTo(depthmat);
 
         float *dep = (float*)depthmat.data;		//将深度图信息放到dep数组中
@@ -348,7 +360,7 @@ int main()
                     && now.val[2]<200 && now.val[2]>20
                     )))
                 */
-                if (now.val[0]<190 && now.val[0]>155)
+                if (now.val[0]<185 && now.val[0]>160)
                     ChangeColor(&hsv,i,j,245,255,255);
                 else if (now.val[0]<73 && now.val[0]>57
                     //&& now.val[1]<240 && now.val[1]>15
@@ -367,24 +379,50 @@ int main()
         cv::cvtColor(hsv, graymat, CV_BGR2GRAY);
         GaussianBlur(graymat, graymat, Size(7, 7), 2, 2);
         //霍夫圆
-        int k = 30;	//调整参数以得到圆
-        int T = 0;
+        int minDis_, k_, minR_;
+        minDis_ = 10;
+        minR_ = 100;
+        k_ = 25;
+        while (minDis_ > 0)
+        {
+            circles.clear();
+            HoughCircles(graymat, circles, CV_HOUGH_GRADIENT, 1, minDis_, 240, k_, minR_, 1000);
+            if ((int)circles.size() < 10)
+            {
+                minDis_ --;
+                minR_ -= 10;
+                if (minDis_ > 0)
+                {
+                    minDis_ --;
+                    minR_ -= 10;
+                }
+                if (minDis_ >7)
+                {
+                    minDis_ --;
+                    minR_ -= 10;
+                }
+            }
+            else break;
+        }
+        if ((int)circles.size() > 150) circles.clear();
+        /*
         while (1)
         {
-            HoughCircles(graymat, circles, CV_HOUGH_GRADIENT, 1, 5, 240, k, 30, 500);
+            HoughCircles(graymat, circles, CV_HOUGH_GRADIENT, 1, 5, 240, k, 25, 500);
             if (T> 100) break;
             if ((int)circles.size() < 20){T+=2;circles.clear();k--;}
             else if ((int)circles.size() > 50){T+=10;circles.clear();k+=5;}
             else break;
         }
+        */
         printf("%d\n" ,(int)circles.size());
         for (int i=0; i<256; i++)
             flag[i]=0;
 
         //通过有效颜色在圆中/圆边界占比，判断是否应该舍弃该圆
         for (size_t i=0; i< circles.size(); i++)
-            if (Per(circles[i][0], circles[i][1], circles[i][2])<0.7
-               || isCircle(circles[i][0], circles[i][1], circles[i][2])<0.9)
+            if (Per(circles[i][0], circles[i][1], circles[i][2])<0.8
+               || isCircle(circles[i][0], circles[i][1], circles[i][2])<0.95)
                 flag[(int)i]=1;
 
         //对圆重叠进行判断
@@ -457,31 +495,96 @@ int main()
         if (tot == 3)
         {
             sort(Circle, Circle+3, cmp);
-            if ((Circle[0].Dis + Circle[1].Dis + Circle[2].Dis) < 3000.0)
+            double argDis = (Circle[0].Dis + Circle[1].Dis + Circle[2].Dis)/3.0;
+            if (sqr(argDis-Circle[0].Dis) + sqr(argDis-Circle[1].Dis) + sqr(argDis-Circle[2].Dis) < 750.0)
             {
-                if (Circle[0].RorG == 250)
+                printf("%0.2lf\n", argDis);
+                if (argDis < 1000.0)
                 {
-                    strcpy(send_buf, "00turnrrg");
-                    send(sockfd, send_buf, strlen(send_buf), 0);   // 向服务器发送信息
-                    printf("Right\n");
+                    k = 25;
+                    minDis = 2;
+                    minR = 20;
                 }
-                else if (Circle[1].RorG == 250)
+                if (argDis < 900.0)
                 {
-                    strcpy(send_buf, "00turnrgr");
-                    send(sockfd, send_buf, strlen(send_buf), 0);   // 向服务器发送信息
-                    printf("Go\n");
+                    k = 25;
+                    minDis = 2;
+                    minR = 25;
                 }
-                else if (Circle[2].RorG == 250)
+                if (argDis < 800.0)
                 {
-                    strcpy(send_buf, "00turngrr");
-                    send(sockfd, send_buf, strlen(send_buf), 0);   // 向服务器发送信息
-                    printf("Left\n");
+                    k = 27;
+                    minDis = 3;
+                    minR = 30;
                 }
-                else
+                if (argDis < 700.0)
                 {
-                    strcpy(send_buf, "00stop");
-                    send(sockfd, send_buf, strlen(send_buf), 0);   // 向服务器发送信息
-                    printf("Stop\n");
+                    k = 28;
+                    minDis = 3;
+                    minR = 35;
+                }
+                if (argDis < 600.0)
+                {
+                    k = 28;
+                    minDis = 4;
+                    minR = 40;
+                }
+                if (argDis < 550.0)
+                {
+                    k = 28;
+                    minDis = 5;
+                    minR = 50;
+                }
+                if (argDis < 500.0)
+                {
+                    k = 30;
+                    minDis = 10;
+                    minR = 80;
+                }
+                if (argDis < 700.0)
+                {
+                    if (Circle[0].RorG == 250)
+                    {
+                        strcpy(send_buf, "00turnrrg");
+                        printf("Right\n");
+                    }
+                    else if (Circle[1].RorG == 250)
+                    {
+                        strcpy(send_buf, "00turnrgr");
+                        printf("Go\n");
+                    }
+                    else if (Circle[2].RorG == 250)
+                    {
+                        strcpy(send_buf, "00turngrr");
+                        printf("Left\n");
+                    }
+                    else
+                    {
+                        strcpy(send_buf, "00turnrrr");
+                        printf("Stop\n");
+                    }
+
+                    int re = send(sockfd, send_buf, strlen(send_buf), 0);   // 向服务器发送信息
+                    if (re < 0)
+                    {
+                        printf("Send fail\n");
+                    }
+
+                    if (Circle[0].RorG == 250 || Circle[2].RorG == 250)
+                    {
+                        re = recv(sockfd, recv_buf, 10, 0);
+                        if (re <= 0)
+                        {
+                            printf("Recv fail\n");
+                        }
+                        else
+                        {
+                            printf("Turn");
+                            k = 25;
+                            minR = 10;
+                            minDis = 1;
+                        }
+                    }
                 }
             }
         }
