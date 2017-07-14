@@ -23,7 +23,7 @@ bool rg[3]; //1-red,0-green
 int whichisrgflag = -1;
 int flag = 0;
 bool rgflag = false; // be true when counter rg traffic
-bool rotate = false;
+//bool rotate = false;
 pthread_t tid[THREAD_NUM];
 int thread_count = 0;
 int robot_vel = 60;
@@ -124,13 +124,7 @@ void* accept_link(void*) {
 
 }
 
-void sendMessage(string response)
-{
-    if(whichisrgflag == -1)
-        return;
-    write(accept_fd[whichisrgflag], response.c_str(), strlen(response.c_str()));
-    cout << "send "<< response <<endl;
-}
+
 
 
 void str2int(int &int_temp,const string &string_temp)
@@ -307,9 +301,16 @@ int main(int argc,char **argv)
                     sleep(1);
                     cout << "is avoid obstacle" <<endl;
                 }
-                RobotRotate(angle,robot);
+                RobotRotate(-angle,robot);
                 robot.move(1500);
                 RobotRotate(-angle,robot);
+                robot.move(distance);
+                while(!robot.isMoveDone())
+                {
+                    sleep(1);
+                    cout << "is avoid obstacle" <<endl;
+                }
+                RobotRotate(angle,robot);
                 robot.setVel(robot_vel);
             }
 
