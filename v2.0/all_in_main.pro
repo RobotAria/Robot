@@ -20,38 +20,34 @@ LIBS += -pthread
 
 unix:!macx: LIBS += -L$$PWD/../../freenect2/lib/ -lfreenect2
 
-INCLUDEPATH += $$PWD/../freenect2/lib
-DEPENDPATH += $$PWD/../freenect2/lib
+INCLUDEPATH += $$PWD/../../freenect2/lib
+DEPENDPATH += $$PWD/../../freenect2/lib
 
 INCLUDEPATH += $$PWD/../../freenect2/include/libfreenect2
 INCLUDEPATH += $$PWD/../../freenect2/include
 
-unix:!macx: LIBS += -L$$PWD/../../../../usr/local/Aria/lib/ -lAria
+unix:!macx: LIBS += -L/usr/local/Aria/lib/ -lAria
 
-INCLUDEPATH += $$PWD/../../../../usr/local/Aria/include
-DEPENDPATH += $$PWD/../../../../usr/local/Aria/include
+INCLUDEPATH += /usr/local/Aria/include
+DEPENDPATH += /usr/local/Aria/include
 
 LIBS += -L/usr/lib/x86_64-linux-gnu/ -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_gpu
 
-unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lboost_system
+unix:!macx: LIBS += -L/usr/lib/x86_64-linux-gnu/ -lboost_system
 
-unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lboost_filesystem
+unix:!macx: LIBS += -L/usr/lib/x86_64-linux-gnu/ -lboost_filesystem
 
-INCLUDEPATH += $$PWD/../../../../usr/lib/x86_64-linux-gnu
-DEPENDPATH += $$PWD/../../../../usr/lib/x86_64-linux-gnu
+INCLUDEPATH += /usr/lib/x86_64-linux-gnu
+DEPENDPATH += /usr/lib/x86_64-linux-gnu
 
-#unix:!macx: LIBS += -L$$PWD/../../../../usr/local/cuda-7.5/lib64/ -lcudart
 
-#INCLUDEPATH += $$PWD/../../../../usr/local/cuda-7.5/lib64
-#DEPENDPATH += $$PWD/../../../../usr/local/cuda-7.5/lib64
+INCLUDEPATH += /usr/include/eigen3
+DEPENDPATH += /usr/include/eigen3
 
-INCLUDEPATH += $$PWD/../../../../usr/include/eigen3
-DEPENDPATH += $$PWD/../../../../usr/include/eigen3
+unix:!macx: LIBS += -L/usr/lib/ -lpcl_io -lpcl_common -lpcl_visualization
 
-unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/ -lpcl_io -lpcl_common -lpcl_visualization
+INCLUDEPATH += /usr/include/pcl-1.7
+DEPENDPATH += /usr/include/pcl-1.7
 
-INCLUDEPATH += $$PWD/../../../../usr/include/pcl-1.7
-DEPENDPATH += $$PWD/../../../../usr/include/pcl-1.7
-
-INCLUDEPATH += $$PWD/../../../../usr/include/vtk-6.2
-DEPENDPATH += $$PWD/../../../../usr/include/vtk-6.2
+INCLUDEPATH += /usr/include/vtk-6.2
+DEPENDPATH += /usr/include/vtk-6.2
