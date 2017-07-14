@@ -5,9 +5,10 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <string.h>
+#include <sstream>
 #include <pthread.h>
 #include <string>
-
+#include <math.h>
 using namespace std;
 
 const int MAXSIZE = 1024;
@@ -25,6 +26,7 @@ bool rgflag = false; // be true when counter rg traffic
 bool rotate = false;
 pthread_t tid[THREAD_NUM];
 int thread_count = 0;
+int robot_vel = 60;
 
 void tcp_server_init(int listen_port) {
 
@@ -131,6 +133,26 @@ void sendMessage(string response)
 }
 
 
+void str2int(int &int_temp,const string &string_temp)
+{
+    stringstream stream(string_temp);
+    stream>>int_temp;
+}
+
+void RobotRotate(int angle, ArRobot &r)
+{
+    r.setVel(0);
+    r.setDeltaHeading(angle);
+    int tmpcount = 0;
+    do
+    {
+        sleep(1);
+        tmpcount++;
+         cout << "in rotate" << endl;
+
+    }while(!r.isHeadingDone() && tmpcount <10);
+}
+
 
 int main(int argc,char **argv)
 {
@@ -184,6 +206,8 @@ int main(int argc,char **argv)
     robot.comInt(ArCommands::ENABLE,1);
     robot.unlock();
 
+    //robot.setAbsoluteMaxRotVel(15);
+    robot.setRotVelMax(15);
     while(1)
     {
         if(flag == 1){
@@ -191,6 +215,7 @@ int main(int argc,char **argv)
             flag = 0;
             //cout <<"rotate_tmp = "<<rotate_temp << endl;
             cout << rg[0] << rg[1] << rg[2] <<endl;
+            cout << "sub="<<inst.substr(0,3)<<endl;
             if(inst == "forward"){
                 if(rg[1])
                     continue;
@@ -200,7 +225,7 @@ int main(int argc,char **argv)
                     memset(rg,0,sizeof(rg));
                 }
                 cout << "receive forward" << endl;
-                robot.setVel(60);
+                robot.setVel(robot_vel);
             }
             else if(inst == "back")
             {
@@ -221,17 +246,19 @@ int main(int argc,char **argv)
                     rgflag = false;
                     memset(rg,0,sizeof(rg));
                 }
-                robot.setVel(0);
                 cout << "receive left" << endl;
-                robot.setDeltaHeading(rotate_temp);
-                int tmpcount = 0;
-                do
-                {
-                    sleep(1);
-                    tmpcount++;
-                     cout << "in left" << endl;
+                RobotRotate(rotate_temp, robot);
+//                robot.setVel(0);
 
-                }while(!robot.isHeadingDone() && tmpcount <5);
+//                robot.setDeltaHeading(rotate_temp);
+//                int tmpcount = 0;
+//                do
+//                {
+//                    sleep(1);
+//                    tmpcount++;
+//                     cout << "in left" << endl;
+
+//                }while(!robot.isHeadingDone() && tmpcount <10);
                 sendMessage("haveturn");
             }
             else if(inst == "right"){
@@ -242,16 +269,17 @@ int main(int argc,char **argv)
                     rgflag = false;
                     memset(rg,0,sizeof(rg));
                 }
-                robot.setVel(0);
                 cout << "receive right" << endl;
-                robot.setDeltaHeading(-rotate_temp);
-                int tmpcount = 0;
-                do
-                {
-                    sleep(1);
-                    tmpcount++;
-                     cout << "in right" << endl;
-                }while(!robot.isHeadingDone() && tmpcount <5);
+//                robot.setVel(0);
+//                robot.setDeltaHeading(-rotate_temp);
+//                int tmpcount = 0;
+//                do
+//                {
+//                    sleep(1);
+//                    tmpcount++;
+//                     cout << "in right" << endl;
+//                }while(!robot.isHeadingDone() && tmpcount < 10);
+                RobotRotate(-rotate_temp, robot);
                 sendMessage("haveturn");
             }
             else if(inst == "exit"){
@@ -263,6 +291,53 @@ int main(int argc,char **argv)
                 rgflag = false;
                 rg_ins = "";
                 cout << "receive reset" << endl;
+            }
+
+            else if(inst.substr(0,8) == "obstacle")
+            {
+                int angle;
+                str2int(angle,inst.substr(8));
+                cout << "encounter obstacle" << endl;
+                cout << "angle=" << angle << endl;
+                RobotRotate(angle,robot);
+                int distance = 1000 / cos(angle);
+                robot.move(distance);
+                while(!robot.isMoveDone())
+                {
+                    sleep(1);
+                    cout << "is avoid obstacle" <<endl;
+                }
+                RobotRotate(angle,robot);
+                robot.move(1500);
+                RobotRotate(-angle,robot);
+                robot.setVel(robot_vel);
+            }
+
+            else if(inst.substr(0,3) == "set")
+            {
+                if(inst.substr(3,3) == "vel")
+                {
+                    int vel;
+                    str2int(vel, inst.substr(6, inst.length()-6));
+                    cout << "set vel = "<<vel <<endl;
+                    robot_vel = vel;
+                }
+                else if(inst.substr(3,5) == "angle")
+                {
+                    int angle;
+                    str2int(angle, inst.substr(8, inst.length()-8));
+                    cout << "set angle = "<< angle <<endl;
+                    RobotRotate(angle,robot);
+
+                }
+                else if(inst.substr(3,6) == "rotvel")
+                {
+                    int rotvel;
+                    str2int(rotvel, inst.substr(9, inst.length()-9));
+                    //robot.setAbsoluteMaxRotVel(rotvel);
+                    robot.setRotVelMax(15);
+                    cout << "set rotvel = "<<rotvel <<endl;
+                }
             }
             else{
                 cout << "error, inst= " << inst <<" rg_ins="<<rg_ins<< endl;
